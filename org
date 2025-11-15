@@ -1,0 +1,61 @@
+
+el siguiente es el loop de aprendizaje reforzado muy en alto nivel
+Agent - Environment loop:
+
+1: agente observa el entorno y recibe información (observación)
+2: en base a observación (y aprendizaje previo?), agente elige una acción
+3: entorno responde a la acción del agente con una nueva situación (game state),
+entrega reward y un indicador de fin de episodio (si agente pierde o gana)
+4: repite hasta que episodio termine
+
+algunos conceptos:
+* episodio: etapa que comprende varios ciclos del loop de aprendizaje hasta que
+agente pierde o gana (dependiendo del entorno), son las 'generaciones'
+* step: paso de un ciclo del loop de aprendizaje; agente observa, acciona y
+entorno responde con reward (recompensa o castigo)
+
+* action space: espacio con todas las acciones que el agente puede hacer; qué
+puede hacer?
+ej: para espacios discretos puede ser; {0, 1} 0: mov. izq., 1: mov. der.
+
+* observation space: espacio con todas las observaciones que el agente puede
+recibir; qué puede ver? (imágenes, sonidos, números, estructuras de info...)
+
+* policy: estrategia del agente que determina qué acción tomar
+en cada situación determinada para maximizar el reward
+
+
+-> estas son instancias particulares de spaces, otros ejemplos:
+box, discrete, multidiscrete, multibinary, text, dict, tuple, graph, sequence...
+
+-> los espacios son una forma de caracterizar cierto entorno, por lo tanto
+todos los espacios dependen completamente del entorno y varían según él
+
+wrappers vienen a ser filtros/modificadores que permiten modificar/simplificar
+la forma en que se interactúa con el entorno sin cambiar cómo funciona el entorno
+por debajo.
+Es útil para tomar un entorno que puede ser muy complejo y llevarlo a algo 
+más simple para trabajarlo. ej: se puede tomar un observation space de 
+cualquier forma y transformarlo a un array 1D, de esta forma es más sencillo
+por ejemplo usarlo para algún algoritmo que espere como input un array 1D
+
+PRIMER MODELO DE AGENTE: Q-LEARNING
+
+exploracion vs explotacion:
+    -> en un inicio el agente explora y aprende del entorno tomando acciones
+    aleatorias y apreniendo poco a poco según cómo responde el entorno
+    y los rewards (prueba y error)
+    -> a lo largo del tiempo, la aleatoriedad y la exploración disminuyen
+    y el modelo pasa más a usar el conocimiento que ha ido adquiriendo para tomar
+    mejores deciciones (acciones que tengan mayor recompensa asociada)
+
+q-learning va construyendo una q-table que el agente va usando para tomar
+sus deciciones:
+    -> filas: situaciones del entorno
+    -> columnas: distintas acciones que el agente puede tomar ante tal situación
+    -> valores: recompensa asociada a la acción en tal situación (q-values)
+
+esta tabla se va actualizando en cada ciclo observación -> acción -> recompensa
+
+
+
