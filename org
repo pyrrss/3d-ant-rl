@@ -57,5 +57,15 @@ sus deciciones:
 
 esta tabla se va actualizando en cada ciclo observación -> acción -> recompensa
 
+----------------------------------------------------------------------------------------
+AQUI VOY A IR ESCRIBIENDO COSAS RANDOM DEL PROYECTO DE IA
 
+objetivos de hoy:
+* iniciar el entorno y hacer acciones aleatorias por ahora -> listop
+* investigar qué algoritmos serían adecuados para el entorno que estamos usando
+
+* para entrenar usar render_mode=None, usar render_mode="human" solo para evaluaciones y grabar videos
+* algoritmos de rl a probar:
+    - PPO
+    - SAC
 

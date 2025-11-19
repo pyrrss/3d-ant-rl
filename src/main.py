@@ -1,3 +1,4 @@
+import os
 import gymnasium as gym
 from gymnasium.envs.registration import pprint_registry
 from tqdm import tqdm
@@ -5,125 +6,104 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pickle
 
-from blackjack_agent import BlackjackAgent
-from test_agent import test_agent
+from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.callbacks import EvalCallback
+
 
 """ 
-EN ESTE PROYECTO SE CREA UN AGENTE QUE USA MODELO Q-LEARNING TABULAR
-PARA JUGAR BLACKJACK
+Este proyecto usa el entorno Ant-v5 para entrenar agentes de RL usando distintos algoritmos.
+Se usa también stable-baselines3 para probar algoritmos ya implementados
 """
 
-pprint_registry()
-
-# --- CONFIGURACIÓN ENTORNO ---
-# NOTE: render_mode=None para entrenamiento más rápido (mucho) y sin visualización. render_mode="human" para visualización
-env = gym.make("Blackjack-v1", render_mode=None)
-n_episodes = 100_000
-
-# -> se aplica wrapper para guardar estadísticas de episodio
-env = gym.wrappers.RecordEpisodeStatistics(env, buffer_length=n_episodes)
-
-# --- SETUP AGENTE ---
-learning_rate = 0.01
-initial_epsilon = 1.0
-epsilon_decay = initial_epsilon / (n_episodes / 2)
-final_epsilon = 0.1
-
-# -> se crea un nuevo agente desde 0
-agent = BlackjackAgent(
-    env,
-    learning_rate,
-    initial_epsilon,
-    epsilon_decay,
-    final_epsilon
-)
-
-# --- CARGADO DEL AGENTE PREVIAMMENTE ENTRENADO ---
-# with open("blackjack_agent.pkl", "rb") as f:
-#     agent = pickle.load(f)
-#     print("Cargando agente previamente entrenado")
-
-# print(f"Agente cargado: {type(agent)}")
-
-# --- TRAINING LOOP ---
-for episode in tqdm(range(n_episodes)):
-    observation, info = env.reset()
-    done = False
-
-    while not done:
-        action = agent.get_action(observation)
-        next_observation, reward, terminated, truncated, info = env.step(action)
-        
-        agent.update(observation, action, float(reward), terminated, next_observation)
-
-        done = terminated or truncated
-        observation = next_observation
+def evaluate_model(model: PPO, n_episodes: int = 100, render: bool = False) -> list:
+    """
+    se realiza una evaluación de un modelo PPO previamente entrenado
+    """
+    env = gym.make("Ant-v5", render_mode="human" if render else None) # -> se crea un nuevo entorno para evaluación
+    scores = []
     
-    agent.decay_epsilon()
+    """
+    el ciclo de aprendizaje, a nivel general, es el siguiente:
+        1. agente recibe una observación del entorno (estado actual)
+        2. agente elige una acción basado en la observación y su política
+        3. entorno responde a la acción con un nuevo estado y recompensa
+        4. repetir hasta que se termina
+    """
+    for _ in range(n_episodes):
+        observation, info = env.reset()
+        done = False
+        episode_score = 0.0
+        while not done:
+            action, _ = model.predict(observation, deterministic=True)
+            next_observation, reward, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
+            episode_score += reward
+            observation = next_observation
+        
+        scores.append(episode_score)
 
-env.close()
-
-
-# --- VISUALIZACIÓN DEL PROGRESO ---
-
-def get_moving_avgs(arr, window, convolution_mode):
-    return np.convolve(
-            np.array(arr).flatten(),
-            np.ones(window),
-            mode=convolution_mode
-            ) / window
-
-rolling_length = 500
-fig, axs = plt.subplots(ncols=3, figsize=(15, 5))
-
-axs[0].set_title("Recompensa por Episodio")
-reward_moving_average = get_moving_avgs(
-        env.return_queue,
-        rolling_length,
-        "valid"
-)
-axs[0].plot(range(len(reward_moving_average)), reward_moving_average)
-axs[0].set_ylabel("Recompensa Promedio")
-axs[0].set_xlabel("Episodio")
-
-axs[1].set_title("Acciones por Episodio")
-length_moving_average = get_moving_avgs(
-    env.length_queue,
-    rolling_length,
-    "valid"
-)
-axs[1].plot(range(len(length_moving_average)), length_moving_average) 
-axs[1].set_ylabel("Duración Promedio")
-axs[1].set_xlabel("Episodio")
-
-axs[2].set_title("Error de Entrenamiento")
-training_error_moving_average = get_moving_avgs(
-        agent.training_error,
-        rolling_length,
-        "same"
-)
-axs[2].plot(range(len(training_error_moving_average)), training_error_moving_average)
-axs[2].set_ylabel("Error de Diferencia Temporal")
-axs[2].set_xlabel("Paso de Entrenamiento (Step)")
-
-plt.tight_layout()
-plt.savefig("rl_progress.png")
-print("\nGráficos de progreso guardados en 'rl_progress.png'")
+    env.close()
+    return scores
 
 
-# --- TESTEO DEL AGENTE CON CONOCIMIENTO ADQUIRIDO ---
-test_agent(agent, env)
+def main():
+    model_file = "PPO_Ant.zip"
+    
+    # --- CONFIGURACIÓN ENTORNO ---
+    # NOTE: render_mode=None para entrenamiento más rápido (mucho) y sin visualización. render_mode="human" para visualización (para evaluaciones)
+    env = gym.make("Ant-v5", render_mode=None)
+    n_episodes = 100_00
 
+    train_env = DummyVecEnv([lambda: env]) # -> sb3 requiere entorno vectorizado
+    eval_env = DummyVecEnv([lambda: env])
+    
+    # --- Configuración modelo PPO ---
+    if os.path.exists(model_file):
+        print(f"Cargando modelo {model_file}")
+        model = PPO.load(model_file, env=train_env, device="cpu")
+    else:
+        print(f"No se encontró modelo, se creará uno nuevo")
 
-# --- GUARDADO DEL AGENTE CON CONOCIMIENTO ADQUIRIDO ---
-# NOTE: se está guardando el agente completo (el objeto) en un archivo
-# otra forma es simplemente guardar el 'conocimiento' (q-table)
+        eval_callback = EvalCallback( # -> cada cierta cantidad de pasos ocurre una evaluación
+            eval_env,
+            best_model_save_path="logs",
+            log_path="logs",
+            eval_freq=10_000, # -> cada 10k pasos se evalúa          
+            n_eval_episodes=5,
+            deterministic=True,
+            render=False,
+        )
 
-print("\n blackjack_agent.pkl guardado")
-with open("blackjack_agent.pkl", "wb") as f:
-    pickle.dump(agent, f)
+        # NOTE: por ahora se usan hiperparámetros genéricos
+        model = PPO(
+            "MlpPolicy",
+            train_env,
+            device="cpu", # -> por ahora se usa CPU para entrenar el modelo (cuda me daba problemas)
+            verbose=1,
+            n_steps=2048,
+            batch_size=256,
+            n_epochs=10,
+            gamma=0.99,
+            gae_lambda=0.95,
+            clip_range=0.2,
+            ent_coef=0.0,
+            learning_rate=3e-4,
+            tensorboard_log="logs"
+        )
 
+        # --- Entrenamiento ---
+        model.learn(total_timesteps=1_000_000, callback=eval_callback)
 
+        # --- Guardado del modelo ---
+        model.save("PPO_Ant")
+        print(f"Modelo guardado en {model_file}")
 
+    # --- Evaluación del modelo ---
+    scores = evaluate_model(model, n_episodes, render=True)
+    
+    print(f"Recompensas promedio: {sum(scores)/len(scores):.1f} ({len(scores)} episodios)")
 
-
+if __name__ == "__main__":
+    main()
