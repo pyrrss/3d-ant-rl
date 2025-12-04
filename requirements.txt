@@ -1,6 +1,11 @@
 gymnasium[toy-text]>=0.29.1
 gymnasium[mujoco]>=0.29.1
+moviepy>=1.0.3
+imageio-ffmpeg>=0.5.1
 numpy>=1.26.0
 matplotlib>=3.9.2
 tqdm>=4.66.5
 stable-baselines3[extra]>=2.3.2
+matplotlib>=3.9.2
+pandas>=2.1.1
+seaborn>=0.12.2

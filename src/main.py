@@ -9,8 +9,8 @@ import pickle
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.callbacks import EvalCallback
-
+from stable_baselines3.common.callbacks import EvalCallback, CheckpointCallback
+from gymnasium.wrappers import RecordVideo
 
 """ 
 Este proyecto usa el entorno Ant-v5 para entrenar agentes de RL usando distintos algoritmos.
@@ -52,12 +52,17 @@ def main():
     model_file = "PPO_Ant.zip"
     
     # --- CONFIGURACIÓN ENTORNO ---
-    # NOTE: render_mode=None para entrenamiento más rápido (mucho) y sin visualización. render_mode="human" para visualización (para evaluaciones)
-    env = gym.make("Ant-v5", render_mode=None)
-    n_episodes = 100_00
+    # NOTE: render_mode=None para entrenamiento más rápido (mucho) y sin visualización. render_mode="human" para visualización (para evaluaciones),
+    # luego también se van aplicando wrappers útiles
+    train_env = gym.make("Ant-v5", render_mode=None)
+    train_env = Monitor(train_env, "logs/monitor.csv") # -> guarda datos de entrenamiento
+    
+    eval_env = gym.make("Ant-v5", render_mode=None)
 
-    train_env = DummyVecEnv([lambda: env]) # -> sb3 requiere entorno vectorizado
-    eval_env = DummyVecEnv([lambda: env])
+    n_episodes = 10
+
+    train_env = DummyVecEnv([lambda: train_env]) # -> sb3 requiere entorno vectorizado
+    eval_env = DummyVecEnv([lambda: eval_env])
     
     # --- Configuración modelo PPO ---
     if os.path.exists(model_file):
@@ -70,11 +75,18 @@ def main():
             eval_env,
             best_model_save_path="logs",
             log_path="logs",
-            eval_freq=10_000, # -> cada 10k pasos se evalúa          
+            eval_freq=10_000, # -> cada 10k se hace una evaluación        
             n_eval_episodes=5,
             deterministic=True,
             render=False,
         )
+        
+        checkpoint_callback = CheckpointCallback(
+            save_freq=100_000, # -> cada 100k se guarda un checkpoint del modelo
+            save_path="checkpoints",
+            name_prefix="PPO_Ant"
+        )
+
 
         # NOTE: por ahora se usan hiperparámetros genéricos
         model = PPO(
@@ -94,7 +106,8 @@ def main():
         )
 
         # --- Entrenamiento ---
-        model.learn(total_timesteps=1_000_000, callback=eval_callback)
+        model.save("checkpoints/PPO_Ant_0_steps") # -> se guarda un checkpoint del modelo sin entrenar
+        model.learn(total_timesteps=1_000_000, callback=[eval_callback, checkpoint_callback])
 
         # --- Guardado del modelo ---
         model.save("PPO_Ant")
