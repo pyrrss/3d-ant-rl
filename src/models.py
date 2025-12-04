@@ -31,8 +31,7 @@ HYPERPARAMS = {
         "gamma": 0.99,
         "gae_lambda": 0.95,
         "learning_rate": 3e-4,
-        "policy_kwargs": dict(lstm_hidden_size=256, shared_lstm=False)
-
+        "policy_kwargs": dict(lstm_hidden_size=256, shared_lstm=False),
     },
     "A2C": {
         "n_steps": 5,
@@ -45,13 +44,15 @@ HYPERPARAMS = {
         "gae_lambda": 0.95,
         "cg_max_steps": 10,
         "learning_rate": 3e-4,  # optional
-    }
+    },
 }
 
 
-class ReinforcementLearningModels():
-    
-    def __init__(self, eval_env: DummyVecEnv, train_env: DummyVecEnv, model: str) -> None: 
+class ReinforcementLearningModels:
+
+    def __init__(
+        self, eval_env: DummyVecEnv, train_env: DummyVecEnv, model: str
+    ) -> None:
         self.__eval_env = eval_env
         self.__train_env = train_env
         self.__name_model = model
@@ -62,14 +63,16 @@ class ReinforcementLearningModels():
 
         policy = "MlpLstmPolicy" if self.__name_model == "RecurrentPPO" else "MlpPolicy"
 
-        eval_callback = EvalCallback( # -> cada cierta cantidad de pasos ocurre una evaluación
-            self.__eval_env,
-            best_model_save_path="logs",
-            log_path="logs",
-            eval_freq=10_000, # -> cada 10k pasos se evalúa          
-            n_eval_episodes=5,
-            deterministic=True,
-            render=False,
+        eval_callback = (
+            EvalCallback(  # -> cada cierta cantidad de pasos ocurre una evaluación
+                self.__eval_env,
+                best_model_save_path="logs",
+                log_path="logs",
+                eval_freq=10_000,  # -> cada 10k pasos se evalúa
+                n_eval_episodes=5,
+                deterministic=True,
+                render=False,
+            )
         )
 
         hyper = HYPERPARAMS[self.__name_model]
@@ -77,17 +80,20 @@ class ReinforcementLearningModels():
         model_reinforcement = self.__model(
             policy,
             self.__train_env,
-            device="cpu", # -> por ahora se usa CPU para entrenar el modelo (cuda me daba problemas)
+            device="cpu",  # -> por ahora se usa CPU para entrenar el modelo (cuda me daba problemas)
             verbose=1,
             tensorboard_log="logs",
-            **hyper
+            **hyper,
         )
 
         # --- Entrenamiento ---
-        model_reinforcement.learn(total_timesteps=1000, callback=eval_callback)
+        model_reinforcement.learn(total_timesteps=1_000_000, callback=eval_callback)
 
         # --- Guardado del modelo ---
         model_reinforcement.save(f"{self.__name_model}_Ant")
         print(f"Modelo guardado en {self.__model_file}")
+
+        self.__train_env.close()
+        self.__eval_env.close()
 
         return model_reinforcement

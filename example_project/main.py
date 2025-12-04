@@ -31,11 +31,7 @@ final_epsilon = 0.1
 
 # -> se crea un nuevo agente desde 0
 agent = BlackjackAgent(
-    env,
-    learning_rate,
-    initial_epsilon,
-    epsilon_decay,
-    final_epsilon
+    env, learning_rate, initial_epsilon, epsilon_decay, final_epsilon
 )
 
 # --- CARGADO DEL AGENTE PREVIAMMENTE ENTRENADO ---
@@ -53,12 +49,12 @@ for episode in tqdm(range(n_episodes)):
     while not done:
         action = agent.get_action(observation)
         next_observation, reward, terminated, truncated, info = env.step(action)
-        
+
         agent.update(observation, action, float(reward), terminated, next_observation)
 
         done = terminated or truncated
         observation = next_observation
-    
+
     agent.decay_epsilon()
 
 env.close()
@@ -66,41 +62,32 @@ env.close()
 
 # --- VISUALIZACIÓN DEL PROGRESO ---
 
+
 def get_moving_avgs(arr, window, convolution_mode):
-    return np.convolve(
-            np.array(arr).flatten(),
-            np.ones(window),
-            mode=convolution_mode
-            ) / window
+    return (
+        np.convolve(np.array(arr).flatten(), np.ones(window), mode=convolution_mode)
+        / window
+    )
+
 
 rolling_length = 500
 fig, axs = plt.subplots(ncols=3, figsize=(15, 5))
 
 axs[0].set_title("Recompensa por Episodio")
-reward_moving_average = get_moving_avgs(
-        env.return_queue,
-        rolling_length,
-        "valid"
-)
+reward_moving_average = get_moving_avgs(env.return_queue, rolling_length, "valid")
 axs[0].plot(range(len(reward_moving_average)), reward_moving_average)
 axs[0].set_ylabel("Recompensa Promedio")
 axs[0].set_xlabel("Episodio")
 
 axs[1].set_title("Acciones por Episodio")
-length_moving_average = get_moving_avgs(
-    env.length_queue,
-    rolling_length,
-    "valid"
-)
-axs[1].plot(range(len(length_moving_average)), length_moving_average) 
+length_moving_average = get_moving_avgs(env.length_queue, rolling_length, "valid")
+axs[1].plot(range(len(length_moving_average)), length_moving_average)
 axs[1].set_ylabel("Duración Promedio")
 axs[1].set_xlabel("Episodio")
 
 axs[2].set_title("Error de Entrenamiento")
 training_error_moving_average = get_moving_avgs(
-        agent.training_error,
-        rolling_length,
-        "same"
+    agent.training_error, rolling_length, "same"
 )
 axs[2].plot(range(len(training_error_moving_average)), training_error_moving_average)
 axs[2].set_ylabel("Error de Diferencia Temporal")
@@ -122,8 +109,3 @@ test_agent(agent, env)
 print("\n blackjack_agent.pkl guardado")
 with open("blackjack_agent.pkl", "wb") as f:
     pickle.dump(agent, f)
-
-
-
-
-

@@ -5,13 +5,16 @@ Este proyecto usa el entorno Ant-v5 para entrenar agentes de RL usando distintos
 Se usa también stable-baselines3 para probar algoritmos ya implementados
 """
 
+
 def evaluate_model(model, n_episodes: int = 5, render: bool = False) -> list:
     """
     se realiza una evaluación de un modelo PPO previamente entrenado
     """
-    env = gym.make("Ant-v5", render_mode="human" if render else None) # -> se crea un nuevo entorno para evaluación
+    env = gym.make(
+        "Ant-v5", render_mode="human" if render else None
+    )  # -> se crea un nuevo entorno para evaluación
     scores = []
-    
+
     """
     el ciclo de aprendizaje, a nivel general, es el siguiente:
         1. agente recibe una observación del entorno (estado actual)
@@ -29,8 +32,12 @@ def evaluate_model(model, n_episodes: int = 5, render: bool = False) -> list:
             done = terminated or truncated
             episode_score += reward
             observation = next_observation
-        
+
         scores.append(episode_score)
+
+    # Important: kill MuJoCo viewer!
+    if render and hasattr(env.unwrapped, "viewer") and env.unwrapped.viewer is not None:
+        env.unwrapped.viewer.close()
 
     env.close()
     return scores
