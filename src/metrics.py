@@ -36,7 +36,7 @@ def evaluate_model(model, n_episodes: int = 5, render: bool = False) -> list:
 
         scores.append(episode_score)
 
-    # NOTE: al parecer esto es necesario para que entrno se cierre correctamente
+    # NOTE: al parecer esto es necesario para que entorno se cierre correctamente
     if render and hasattr(env.unwrapped, "viewer") and env.unwrapped.viewer is not None:
         env.unwrapped.viewer.close()
 

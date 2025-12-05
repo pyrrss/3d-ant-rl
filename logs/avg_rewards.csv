@@ -1,0 +1,5 @@
+model,avg_reward,n_episodes
+PPO,1667.47,30
+TRPO,2269.98,30
+A2C,-26.19,30
+RecurrentPPO,989.41,30

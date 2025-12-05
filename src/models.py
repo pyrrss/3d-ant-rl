@@ -95,7 +95,9 @@ class ReinforcementLearningModels:
         )
 
         # --- Entrenamiento ---
-        model_reinforcement.save(f"{self.__name_model}_Ant_0_steps") # -> se guarda el modelo inicial
+        model_reinforcement.save(f"checkpoints/{self.__name_model}_Ant_0_steps") # -> se guarda el modelo inicial
+        
+        # NOTE: 1M timesteps no es óptimo para la mayoría de modelos; probablemente hay que aumentar       
         model_reinforcement.learn(total_timesteps=1_000_000, callback=[eval_callback, checkpoint_callback])
 
         # --- Guardado del modelo ---

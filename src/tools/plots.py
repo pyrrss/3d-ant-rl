@@ -6,17 +6,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def smooth(values: np.ndarray, window: int) -> tuple[np.ndarray, bool]:
-    """
-    se aplica suavizado mediante media móvil sobre bloques de episodios de longitud 'window'
-    """
-    if len(values) < window:
-        return values, False
-
-    smoothed = np.convolve(values, np.ones(window) / window, mode="valid")
-    return smoothed, True
-
-
 def plot_learning_curve(df: pd.DataFrame, label: str, window: int, ax = None):
     """
     se grafica la curva de aprendizaje de un modelo
@@ -28,22 +17,40 @@ def plot_learning_curve(df: pd.DataFrame, label: str, window: int, ax = None):
     
     if ax is None:
         ax = plt.gca()
+    
+    # se quita notación científica del eje x para mostrar timestamps tal cual (0.1 -> 100000, 0.2 -> 200000, ..., 1.0 -> 1000000)
+    ax.ticklabel_format(style="plain", axis="x")
 
-    rewards = df["r"].to_numpy()
-    timesteps = df["timesteps"].to_numpy()
+    rewards = df["r"]
+    timesteps = df["timesteps"]
 
-
-    smoothed, is_smoothed = smooth(rewards, window)
-    if is_smoothed:
-        timesteps_smoothed = timesteps[-len(smoothed):]
-    else:
-        timesteps_smoothed = timesteps
+    smoothed = rewards.rolling(window=window, min_periods=window, center=False).mean()
 
     ax.plot(timesteps, rewards, alpha=0.2, label=f"{label} (crudo)")
-    ax.plot(timesteps_smoothed, smoothed, label=f"{label} (w={window})")
+    ax.plot(timesteps, smoothed, label=f"{label} (w={window})")
 
+def plot_avg_rewards(csv_path: str = "logs/avg_rewards.csv"):
+    """
+    se grafican las recompensas promedio de los modelos que hayan sido evaluados (en logs/avg_rewards.csv)
+    """
+    # TODO: debería incluir tambien desviacion estandar o intervalos de confianza para las medias
 
+    if not os.path.exists("logs/avg_rewards.csv"):
+        raise FileNotFoundError("No se encontró logs/avg_rewards.csv")
 
+    df = pd.read_csv("logs/avg_rewards.csv")
+    
+    n_evaluation_episodes = df["n_episodes"].max()
+
+    plt.figure(figsize=(9, 5))
+    plt.bar(df["model"], df["avg_reward"], color="C0", alpha=0.8)
+    plt.ylabel("Recompensa promedio")
+    plt.title(f"Recompensas promedio por modelo en {n_evaluation_episodes} episodios")
+    plt.tight_layout()
+
+    plt.savefig("visualizations/avg_rewards.png")
+    
+    plt.show()
 
 def find_monitors(logs_dir: str, model: str | None) -> dict[str, str]:
     """
@@ -88,6 +95,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     
+    # -- LEARNING CURVES --
     monitors = find_monitors(args.logs_dir, args.model)
     if not monitors:
         raise SystemExit("No se encontraron monitor.csv")
@@ -108,6 +116,9 @@ if __name__ == "__main__":
     print(f"Guardado en {args.out}")
     plt.show()
     
+    # -- AVG REWARDS --
+    plot_avg_rewards()
+
 
             
 
