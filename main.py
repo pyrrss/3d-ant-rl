@@ -63,10 +63,7 @@ def main():
     # NOTE: render_mode=None para entrenamiento más rápido (mucho) y sin visualización. render_mode="human" para visualización (para evaluaciones),
     # luego también se van aplicando wrappers útiles
     
-    train_env = gym.make("Ant-v5", render_mode=None)
     eval_env = gym.make("Ant-v5", render_mode=None)
-
-    train_env = DummyVecEnv([lambda: train_env]) # -> sb3 requiere entorno vectorizado
     eval_env = DummyVecEnv([lambda: eval_env])
     
     if any(vars(args).values()):
@@ -78,7 +75,10 @@ def main():
         model_saved, name_model, model_file = select_model_saved()
 
     if not model_saved:
+        # se realiza el entrenamiento
+        train_env = gym.make("Ant-v5", render_mode=None)
         train_env = Monitor(train_env, f"logs/{args.model}_monitor.csv") # -> guarda datos de entrenamiento del modelo
+        train_env = DummyVecEnv([lambda: train_env]) # -> sb3 requiere entorno vectorizado
         re = ReinforcementLearningModels(
             eval_env=eval_env, train_env=train_env, model=name_model
         )
