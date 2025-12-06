@@ -5,6 +5,19 @@ from stable_baselines3 import PPO, A2C
 from sb3_contrib import TRPO, RecurrentPPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 
+"""
+herramienta para grabar checkpoints de modelos en distintas etapas de aprendizaje
+
+uso:
+    python -m src.tools.record_videos --model <modelo>
+
+ej:
+    python -m src.tools.record_videos --model PPO
+    
+
+comentar/descomentar lineas en main para grabar los checkpoints que se quieran
+"""
+
 MODELS = {
     "PPO": PPO,
     "A2C": A2C,

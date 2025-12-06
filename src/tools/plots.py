@@ -31,19 +31,20 @@ def plot_learning_curve(df: pd.DataFrame, label: str, window: int, ax = None):
 
 def plot_avg_rewards(csv_path: str = "logs/avg_rewards.csv"):
     """
-    se grafican las recompensas promedio de los modelos que hayan sido evaluados (en logs/avg_rewards.csv)
+    se grafican las recompensas promedio y desviación estándar de los modelos que hayan sido evaluados (en logs/avg_rewards.csv)
     """
-    # TODO: debería incluir tambien desviacion estandar o intervalos de confianza para las medias
-
     if not os.path.exists("logs/avg_rewards.csv"):
         raise FileNotFoundError("No se encontró logs/avg_rewards.csv")
 
     df = pd.read_csv("logs/avg_rewards.csv")
     
-    n_evaluation_episodes = df["n_episodes"].max()
+    # std
+    yerr = df["std_reward"]
+    yerr_kwargs = {"yerr": yerr, "capsize": 6, "linewidth": 1.5}
 
+    n_evaluation_episodes = df["n_episodes"].max()
     plt.figure(figsize=(9, 5))
-    plt.bar(df["model"], df["avg_reward"], color="C0", alpha=0.8)
+    plt.bar(df["model"], df["avg_reward"], color="C0", alpha=0.8, **yerr_kwargs)
     plt.ylabel("Recompensa promedio")
     plt.title(f"Recompensas promedio por modelo en {n_evaluation_episodes} episodios")
     plt.tight_layout()
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     # -- AVG REWARDS --
     plot_avg_rewards()
 
-
+    # TODO: agregar más métricas?
             
 
     

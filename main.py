@@ -32,19 +32,38 @@ MODELS = {
     "RecurrentPPO": RecurrentPPO,
 }
 
-def save_avg_rewards(rewards_csv_path: Path, name_model: str, avg_score: float, n_evaluation_episodes: int):
+def save_avg_rewards(path: str, name_model: str, scores: list,  avg_score: float, n_evaluation_episodes: int):
     """
-    se escribe la recompensa promedio del modelo en 'n_evaluation_episodes' episodios en un csv (para luego leer y graficar en plots)
+    se escriben datos de evaluacion del modelo en 'n_evaluation_episodes' episodios en un csv (para luego leer y graficar en plots)
+    
+    avg_reward, std_reward, median_reward, p25, p75, min_reward, max_reward
+    
     """
+    rewards_csv_path = Path(path)
+    rewards_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Guardando datos de evaluación en {rewards_csv_path}")
+    
+    scores_arr = np.array(scores, dtype=float)
+    row = {
+        "model": name_model,
+        "n_episodes": n_evaluation_episodes,
+        "avg_reward": avg_score,
+        "std_reward": round(float(np.std(scores_arr)), 3),
+        "median_reward": round(float(np.median(scores_arr)), 3),
+        "p25": round(float(np.percentile(scores_arr, 25)), 3),
+        "p75": round(float(np.percentile(scores_arr, 75)), 3),
+        "min_reward": round(float(np.min(scores_arr)), 3),
+        "max_reward": round(float(np.max(scores_arr)), 3)
+    }
+
     # si no existe el archivo se debe escribir el header
     should_write_header = not rewards_csv_path.exists()
 
     with rewards_csv_path.open("a", newline="") as f:
-        writer = csv.writer(f)
+        writer = csv.DictWriter(f, fieldnames=row.keys())
         if should_write_header:
-            writer.writerow(["model", "avg_reward", "n_episodes"])
-
-        writer.writerow([name_model, avg_score, n_evaluation_episodes])
+            writer.writeheader()
+        writer.writerow(row)
 
 
 def main():
@@ -77,7 +96,7 @@ def main():
     if not model_saved:
         # se realiza el entrenamiento
         train_env = gym.make("Ant-v5", render_mode=None)
-        train_env = Monitor(train_env, f"logs/{args.model}_monitor.csv") # -> guarda datos de entrenamiento del modelo
+        train_env = Monitor(train_env, f"logs/{name_model}_monitor.csv") # -> guarda datos de entrenamiento del modelo
         train_env = DummyVecEnv([lambda: train_env]) # -> sb3 requiere entorno vectorizado
         re = ReinforcementLearningModels(
             eval_env=eval_env, train_env=train_env, model=name_model
@@ -101,18 +120,13 @@ def main():
 
     # TODO: habria que hacer una tablita comparando las recompensas promedio de cada modelo en x episodios
     n_evaluation_episodes = 30
-    scores = evaluate_model(model, n_evaluation_episodes, render=False)
-    avg_score = (sum(scores) / len(scores)).round(2)
+    print("Realizando evaluación del modelo...")
+    scores = evaluate_model(model, name_model,  n_evaluation_episodes, render=False)
+    avg_score = round(sum(scores) / len(scores), 2)
 
     print(f"Recompensas promedio: {avg_score} ({len(scores)} episodios)")
     
-    # se escribe la recompensa promedio en un csv, para luego leerlo en plots y graficar
-
-    rewards_csv_path = Path("logs/avg_rewards.csv")
-    rewards_csv_path.parent.mkdir(parents=True, exist_ok=True)
-    print(f"Guardando recompensas promedio en {rewards_csv_path}")
-
-    save_avg_rewards(rewards_csv_path, name_model, avg_score, n_evaluation_episodes)
+    save_avg_rewards("logs/avg_rewards.csv", name_model, scores, avg_score, n_evaluation_episodes)
 
 
 
