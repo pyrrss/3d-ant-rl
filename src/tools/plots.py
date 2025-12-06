@@ -47,9 +47,11 @@ def plot_avg_rewards(csv_path: str = "logs/avg_rewards.csv"):
     plt.ylabel("Recompensa promedio")
     plt.title(f"Recompensas promedio por modelo en {n_evaluation_episodes} episodios")
     plt.tight_layout()
+    
 
     plt.savefig("visualizations/avg_rewards.png")
-    
+    print("Recompensas promedio guardada en visualizations/avg_rewards.png")
+
     plt.show()
 
 def find_monitors(logs_dir: str, model: str | None) -> dict[str, str]:
@@ -108,12 +110,12 @@ if __name__ == "__main__":
     ax.set_xlabel("Timesteps acumulados")
     ax.set_ylabel("Retorno por episodio")
     ax.set_title(f"Curva de aprendizaje: {args.model}" if args.model else "Curvas de aprendizaje (comparativa)")
-    ax.legend()
+    ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1), framealpha=0.9)
     ax.grid(alpha=0.2)
     plt.tight_layout()
     
-    plt.savefig(args.out)
-    print(f"Guardado en {args.out}")
+    plt.savefig(args.out, bbox_inches="tight")
+    print(f"Curva de aprendizaje guardada en {args.out}")
     plt.show()
     
     # -- AVG REWARDS --
