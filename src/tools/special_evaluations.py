@@ -76,10 +76,13 @@ if __name__ == "__main__":
     # lo siguiente es necesario porque gym.make busca el .xml relativo a la carpeta de gymnasium, no del repo, por lo que se le pasa ruta absoluta
     xml_path = Path(__file__).resolve().parents[2] / "special_envs" / f"{args.file}"
     env = gym.make("Ant-v5", xml_file=str(xml_path), render_mode="rgb_array", camera_name="track")
+    
+    # NOTE: ahora mismo en los videos que se graban la cámara va más rápido que la hormiga y en un punto la deja atrás.
 
     # NOTE: para configuraciones como colocar obstáculos, hacerlo desde archivo xml. para configs. como fricción, masa o damping, ajustar desde aquí
     
     # EJEMPLO DE AJUSTES
+    # NOTE: no estoy 100% seguro de que funcione bien. revisar/ajustar
     scale_mass(env, factor=1.2) # 20% mas de masa en cuerpos
     scale_damping(env, factor=0.1) # 10% de damping en articulaciones (muy sueltos)
     set_friction(env, multiplier=1.5) # 150% de fricción en cuerpos
