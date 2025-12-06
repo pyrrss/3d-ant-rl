@@ -88,7 +88,7 @@ class ReinforcementLearningModels:
         model_reinforcement = self.__model(
             policy,
             self.__train_env,
-            device="cuda",  # -> por ahora se usa CPU para entrenar el modelo (cuda me daba problemas)
+            device="cpu",  # -> por ahora se usa CPU para entrenar el modelo (cuda me daba problemas)
             verbose=1,
             tensorboard_log="logs",
             **hyper,
