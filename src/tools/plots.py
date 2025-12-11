@@ -6,6 +6,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
+COLOR_MAP = {
+    "A2C": "#1f77b4",          # azul
+    "TRPO": "#ff7f0e",         # naranjo
+    "RecurrentPPO": "#2ca02c", # verde
+    "PPO": "#d62728",          # rojo
+}
+
 def plot_learning_curve(df: pd.DataFrame, label: str, window: int, ax = None):
     """
     se grafica la curva de aprendizaje de un modelo
@@ -26,7 +33,7 @@ def plot_learning_curve(df: pd.DataFrame, label: str, window: int, ax = None):
 
     smoothed = rewards.rolling(window=window, min_periods=window, center=False).mean()
 
-    ax.plot(timesteps, rewards, alpha=0.2, label=f"{label} (crudo)")
+    # ax.plot(timesteps, rewards, alpha=0.2, label=f"{label} (crudo)")
     ax.plot(timesteps, smoothed, label=f"{label} (w={window})")
 
 def plot_avg_rewards(csv_path: str = "logs/avg_rewards.csv"):
@@ -37,6 +44,7 @@ def plot_avg_rewards(csv_path: str = "logs/avg_rewards.csv"):
         raise FileNotFoundError("No se encontró logs/avg_rewards.csv")
 
     df = pd.read_csv("logs/avg_rewards.csv")
+    colors = [COLOR_MAP.get(m, "C0") for m in df["model"]]
     
     # std
     yerr = df["std_reward"]
@@ -44,7 +52,7 @@ def plot_avg_rewards(csv_path: str = "logs/avg_rewards.csv"):
 
     n_evaluation_episodes = df["n_episodes"].max()
     plt.figure(figsize=(9, 5))
-    plt.bar(df["model"], df["avg_reward"], color="C0", alpha=0.8, **yerr_kwargs)
+    plt.bar(df["model"], df["avg_reward"], color=colors, alpha=0.8, **yerr_kwargs)
     plt.ylabel("Recompensa promedio")
     plt.title(f"Recompensas promedio por modelo en {n_evaluation_episodes} episodios")
     plt.tight_layout()
@@ -92,7 +100,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default=None, help="Nombre de modelo a graficar; al omitir, se comparan todos los *_monitor.csv")
     parser.add_argument("--logs-dir", type=str, default="logs", help="Directorio base con monitor.csv")
-    parser.add_argument("--window", type=int, default=20, help="Longitud de ventana de suavizado (media móvil)")
+    parser.add_argument("--window", type=int, default=100, help="Longitud de ventana de suavizado (media móvil)")
     parser.add_argument("--out", type=str, default="visualizations/learning_curve.png", help="Ruta para guardar imagen")
 
 

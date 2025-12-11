@@ -12,6 +12,8 @@ def evaluate_model(model, name_model: str, env: gym.Env = None, n_episodes: int 
     """
     se realiza la evaluación de un modelo previamente entrenado sobre un entorno dado,
     durante n_episodes y se devuelve la lista de recompensas obtenidas en cada episodio
+    
+    si model = None, se eligen acciones aleatorias
     """
     if env is None:
         render_mode = "rgb_array" if should_record_video else ("human" if render else None)
@@ -43,7 +45,7 @@ def evaluate_model(model, name_model: str, env: gym.Env = None, n_episodes: int 
         done = False
         episode_score = 0.0
         while not done:
-            action, _ = model.predict(observation, deterministic=True)
+            action, _ = model.predict(observation, deterministic=True) if model else env.action_space.sample()
             next_observation, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
             episode_score += reward

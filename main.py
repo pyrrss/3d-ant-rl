@@ -119,9 +119,9 @@ def main():
     # --- Evaluación del modelo ---
 
     # TODO: habria que hacer una tablita comparando las recompensas promedio de cada modelo en x episodios
-    n_evaluation_episodes = 30
+    n_evaluation_episodes = 100
     print("Realizando evaluación del modelo...")
-    scores = evaluate_model(model, name_model,  n_evaluation_episodes, render=False)
+    scores = evaluate_model(model, name_model,  n_episodes=n_evaluation_episodes, render=False)
     avg_score = round(sum(scores) / len(scores), 2)
 
     print(f"Recompensas promedio: {avg_score} ({len(scores)} episodios)")
