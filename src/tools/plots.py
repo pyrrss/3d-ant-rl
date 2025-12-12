@@ -30,11 +30,17 @@ def plot_learning_curve(df: pd.DataFrame, label: str, window: int, ax = None):
 
     rewards = df["r"]
     timesteps = df["timesteps"]
-
-    smoothed = rewards.rolling(window=window, min_periods=window, center=False).mean()
-
-    # ax.plot(timesteps, rewards, alpha=0.2, label=f"{label} (crudo)")
-    ax.plot(timesteps, smoothed, label=f"{label} (w={window})")
+    
+    # media móvil
+    mean = rewards.rolling(window=window, min_periods=window).mean()
+    
+    std = rewards.rolling(window=window, min_periods=window).std()
+    
+    # curva suavizada
+    ax.plot(timesteps, mean, label=f"{label} (w={window})")
+    
+    # std
+    ax.fill_between(timesteps, mean - std, mean + std, alpha=0.15, label=f"{label} +- std")
 
 def plot_avg_rewards(csv_path: str = "logs/avg_rewards.csv"):
     """

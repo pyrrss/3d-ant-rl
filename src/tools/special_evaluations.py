@@ -1,6 +1,7 @@
 import argparse
 
 import gymnasium as gym
+import numpy as np
 from stable_baselines3 import PPO, A2C
 from sb3_contrib import TRPO, RecurrentPPO
 from pathlib import Path
@@ -73,7 +74,7 @@ if __name__ == "__main__":
     
     # -- Creación del entorno personalizado --
     
-    # lo siguiente es necesario porque gym.make busca el .xml relativo a la carpeta de gymnasium, no del repo, por lo que se le pasa ruta absoluta
+    # lo siguiente es necesario porque gym.make busca el .xml relativo a la carpeta de gymnasium, no del repo, asi que se le pasa ruta absoluta
     xml_path = Path(__file__).resolve().parents[2] / "special_envs" / f"{args.file}"
     env = gym.make("Ant-v5", xml_file=str(xml_path), render_mode="rgb_array", camera_name="track")
     
@@ -83,23 +84,29 @@ if __name__ == "__main__":
     
     # EJEMPLO DE AJUSTES
     # NOTE: no estoy 100% seguro de que funcione bien. revisar/ajustar
-    scale_mass(env, factor=1.2) # 20% mas de masa en cuerpos
-    scale_damping(env, factor=0.1) # 10% de damping en articulaciones (muy sueltos)
-    set_friction(env, multiplier=1.5) # 150% de fricción en cuerpos
+    # scale_mass(env, factor=1.2) # 20% mas de masa en cuerpos
+    # set_friction(env, multiplier=1.5) # 150% de fricción en cuerpos
+    # scale_damping(env, factor=0.1) # 10% de damping en articulaciones (muy sueltos)
 
     # -- Carga del modelo --
     model = MODELS[args.model].load(f"{args.model}_Ant.zip", device="cpu", env=None)
 
     # -- Evaluación del modelo --
     print(f"Grabando videos y guardando en videos/special_evaluations/{args.model}")
-    evaluate_model(
+    scores = evaluate_model(
         model=model,
         name_model=args.model, 
-        n_episodes=5,
+        n_episodes=30,
         env=env, 
         render=False, 
         should_record_video=True
     )
+
+    # recompensa media 
+    print(f"Recompensa promedio: {np.mean(scores)}")
+    
+    # std
+    print(f"Desviación estpándar: {np.std(scores)}")
 
 
 

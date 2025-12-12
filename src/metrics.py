@@ -1,4 +1,5 @@
 import os
+import mujoco
 import gymnasium as gym
 from gymnasium.wrappers import RecordVideo
 
@@ -20,7 +21,17 @@ def evaluate_model(model, name_model: str, env: gym.Env = None, n_episodes: int 
         env = gym.make(
             "Ant-v5", render_mode=render_mode
         )
-    
+    else:
+        # extensión del suelo
+        m = env.unwrapped.model
+        floor_id = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+        m.geom_size[floor_id] = [200.0, 200.0, 1.0]
+        # ajuste de la textura del suelo
+        mat_id = m.geom_matid[floor_id]
+        if mat_id != -1:
+            m.mat_texrepeat[mat_id] *= 10.0  
+        env.reset()
+
     # esto es solo para evaluaciones especiales (con cambios en config. entorno). Para grabar evaluaciones normales se usa record_videos.py
     if should_record_video: 
         os.makedirs(f"videos/special_evaluations/{name_model}", exist_ok=True)
