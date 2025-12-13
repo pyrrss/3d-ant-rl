@@ -59,11 +59,24 @@ Para realizar y guardar grabaciones de los modelos, ejecutar:
 ```bash
 python -m src.tools.record_videos --model <model>
 ```
-Donde <model> = {A2C, TRPO, PPO, RecurrentPPO}
 
 El propósito principal de esta herramienta es realizar grabaciones de los modelos en distintas etapas de aprendizaje. Actualmente la configuración
 se realiza dentro del script (se debe mejorar CLI). Durante el entrenamiento se guardan checkpoints del modelo cada 100.000 steps (se guardan en checkpoints/),
 estos actualmente se cargan en el script y se realiza una evaluación grabada del modelo en ese estado para posteriormente guardarla en videos/.
+
+## Evaluaciones especiales
+
+Para realizar, grabar y guardar evaluaciones especiales, es decir, con configuraciones de entorno personalizadas, ejecutar:
+
+```bash
+python -m src.tools.special_evaluations --model <model> --file <filexml>
+```
+Donde filexml corresponde al archivo .xml a partir del cual se carga la configuracón del entorno. Este archivo se debe encontrar en special_envs/.
+Como ejemplo, se tiene un archivo .xml que añade algunos obstáculos al entorno. Un ejemplo de ejecución sería:
+
+```bash
+python -m src.tools.special_evaluations --model TRPO --file new_geom_ant.xml
+```
 
 
 # Equipo
