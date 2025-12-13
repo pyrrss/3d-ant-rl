@@ -6,6 +6,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pickle
 import argparse
+import csv
+from pathlib import Path
 
 from stable_baselines3 import PPO, A2C
 from sb3_contrib import TRPO, RecurrentPPO
@@ -30,6 +32,40 @@ MODELS = {
     "RecurrentPPO": RecurrentPPO,
 }
 
+def save_avg_rewards(path: str, name_model: str, scores: list,  avg_score: float, n_evaluation_episodes: int):
+    """
+    se escriben datos de evaluacion del modelo en 'n_evaluation_episodes' episodios en un csv (para luego leer y graficar en plots)
+    
+    avg_reward, std_reward, median_reward, p25, p75, min_reward, max_reward
+    
+    """
+    rewards_csv_path = Path(path)
+    rewards_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Guardando datos de evaluación en {rewards_csv_path}")
+    
+    scores_arr = np.array(scores, dtype=float)
+    row = {
+        "model": name_model,
+        "n_episodes": n_evaluation_episodes,
+        "avg_reward": avg_score,
+        "std_reward": round(float(np.std(scores_arr)), 3),
+        "median_reward": round(float(np.median(scores_arr)), 3),
+        "p25": round(float(np.percentile(scores_arr, 25)), 3),
+        "p75": round(float(np.percentile(scores_arr, 75)), 3),
+        "min_reward": round(float(np.min(scores_arr)), 3),
+        "max_reward": round(float(np.max(scores_arr)), 3)
+    }
+
+    # si no existe el archivo se debe escribir el header
+    should_write_header = not rewards_csv_path.exists()
+
+    with rewards_csv_path.open("a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=row.keys())
+        if should_write_header:
+            writer.writeheader()
+        writer.writerow(row)
+
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -46,12 +82,7 @@ def main():
     # NOTE: render_mode=None para entrenamiento más rápido (mucho) y sin visualización. render_mode="human" para visualización (para evaluaciones),
     # luego también se van aplicando wrappers útiles
     
-    train_env = gym.make("Ant-v5", render_mode=None)
-    train_env = Monitor(train_env, f"logs/{args.model}_monitor.csv") # -> guarda datos de entrenamiento del modelo
-    
     eval_env = gym.make("Ant-v5", render_mode=None)
-
-    train_env = DummyVecEnv([lambda: train_env]) # -> sb3 requiere entorno vectorizado
     eval_env = DummyVecEnv([lambda: eval_env])
     
     if any(vars(args).values()):
@@ -63,6 +94,10 @@ def main():
         model_saved, name_model, model_file = select_model_saved()
 
     if not model_saved:
+        # se realiza el entrenamiento
+        train_env = gym.make("Ant-v5", render_mode=None)
+        train_env = Monitor(train_env, f"logs/{name_model}_monitor.csv") # -> guarda datos de entrenamiento del modelo
+        train_env = DummyVecEnv([lambda: train_env]) # -> sb3 requiere entorno vectorizado
         re = ReinforcementLearningModels(
             eval_env=eval_env, train_env=train_env, model=name_model
         )
@@ -73,7 +108,8 @@ def main():
         
         if os.path.exists(model_file):
             print(f"Cargando modelo {model_file}")
-            model = MODELS[name_model].load(model_file, env=train_env, device="cpu")
+        
+            model = MODELS[name_model].load(model_file, env=eval_env, device="cpu")
         else:
             print(
                 f"El modelo {model_file} no existe (Verifique que esté guardado este archivo)."
@@ -81,9 +117,17 @@ def main():
             return
     
     # --- Evaluación del modelo ---
-    scores = evaluate_model(model, 5, render=True)
+
+    # TODO: habria que hacer una tablita comparando las recompensas promedio de cada modelo en x episodios
+    n_evaluation_episodes = 100
+    print("Realizando evaluación del modelo...")
+    scores = evaluate_model(model, name_model,  n_episodes=n_evaluation_episodes, render=False)
+    avg_score = round(sum(scores) / len(scores), 2)
+
+    print(f"Recompensas promedio: {avg_score} ({len(scores)} episodios)")
     
-    print(f"Recompensas promedio: {sum(scores)/len(scores):.1f} ({len(scores)} episodios)")
+    save_avg_rewards("logs/avg_rewards.csv", name_model, scores, avg_score, n_evaluation_episodes)
+
 
 
 if __name__ == "__main__":
