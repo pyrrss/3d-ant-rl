@@ -20,9 +20,9 @@ Para realizar el entrenamiento de un modelo, desde el directorio raíz:
 ```bash
 python main.py --model <model>
 ```
-Donde <model> = {A2C, TRPO, PPO, RecurrentPPO}
+Donde model = {A2C, TRPO, PPO, RecurrentPPO}
 
-Durante el entrenamiento se va construyendo un archivo logs/<model>_monitor.csv con datos de entrenamiento en tiempo real.
+Durante el entrenamiento se va construyendo un archivo logs/*_monitor.csv (dependiendo del modelo entrenado) con datos de entrenamiento en tiempo real.
 Cabe destacar que en el directorio raíz están disponibles modelos ya entrenados (archivos .zip) con 5.000.000 steps.
 
 # Evaluación de modelos
@@ -48,8 +48,8 @@ desde el directorio raíz:
 python -m src.tools.plots
 ```
 
-Para el funcionamiento correcto de este script debe estar presente el o los archivos logs/<model>_monitor.csv para la construcción de las curvas
-de aprendizaje (se toman todos los disponibles) y logs/avg_rewards.csv para la contrucción de las curvas de recompensas medias.
+Para el funcionamiento correcto de este script debe estar presente el o los archivos logs/*_monitor.csv para la construcción de las curvas
+de aprendizaje (se toman todos los disponibles) y logs/avg_rewards.csv para la contrucción del gráfico de recompensas medias.
 
 
 ## Grabación y guardado de videos
